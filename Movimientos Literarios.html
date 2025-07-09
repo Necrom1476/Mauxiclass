@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Memoria Literaria</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .pantalla {
+      display: none;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .activa {
+      display: block;
+    }
+    h1, h2 {
+      margin-bottom: 1rem;
+      color: #2c3e50;
+    }
+    input {
+      padding: 0.8rem;
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background-color: #3498db;
+      color: white;
+      margin: 1rem 0;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    #zona-juego {
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+      justify-content: space-between;
+      margin-top: 1rem;
+    }
+    #zona-frases {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding-right: 1rem;
+    }
+    .frase-draggable {
+      background: white;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      cursor: grab;
+    }
+    .contenedor-movimiento {
+      flex: 1;
+      background-color: #ecf0f1;
+      border-radius: 10px;
+      padding: 1rem;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .contenedor-movimiento h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .correcto {
+      background-color: #2ecc71 !important;
+      color: white;
+    }
+    .incorrecto {
+      background-color: #e74c3c !important;
+      color: white;
+    }
+    #juegoPantalla > h2 {
+      margin-bottom: 0.5rem;
+    }
+    #jugador, #cronometro {
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    .medalla {
+      width: 100px;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Pantalla 1: Portada -->
+  <div id="portada" class="pantalla activa">
+    <h1>🎭 Memoria Literaria</h1>
+    <p>Ingresa tu nombre para comenzar:</p>
+    <input type="text" id="nombreJugador" placeholder="Tu nombre...">
+    <button onclick="iniciarJuego()">Comenzar</button>
+  </div>
+
+  <!-- Pantalla 2: Juego -->
+  <div id="juegoPantalla" class="pantalla">
+    <h2>Memoria Literaria</h2>
+    <p>Arrastra cada frase a la columna que representa el movimiento literario correcto:</p>
+    <div id="jugador"></div>
+    <div id="cronometro">Tiempo: 0 segundos</div>
+    <div id="zona-juego">
+      <div id="zona-frases"></div>
+      <div class="contenedor-movimiento" id="Romanticismo" ondragover="permitirDrop(event)" ondrop="soltar(event, 'Romanticismo')">
+        <h3>Romanticismo</h3>
+      </div>
+      <div class="contenedor-movimiento" id="Modernismo" ondragover="permitirDrop(event)" ondrop="soltar(event, 'Modernismo')">
+        <h3>Modernismo</h3>
+      </div>
+      <div class="contenedor-movimiento" id="Realismo" ondragover="permitirDrop(event)" ondrop="soltar(event, 'Realismo')">
+        <h3>Realismo</h3>
+      </div>
+    </div>
+    <button id="finBtn" onclick="finalizarJuego()" style="display:none">Finalizar y ver resultados</button>
+  </div>
+
+  <!-- Pantalla 3: Resumen -->
+  <div id="resumenPantalla" class="pantalla">
+    <h2>Resumen del juego</h2>
+    <p id="resumenTexto"></p>
+    <img id="medallaImg" class="medalla" src="" alt="Medalla"/>
+  </div>
+
+  <script>
+    let frases = [
+      "Prefiero morir amando a vivir sin amor.",
+      "Sus lágrimas eran fuego: ardían más que mil soles.",
+      "Vagué por los bosques buscando el alma que perdí.",
+      "Amar sin medida es mi única redención.",
+      "Grité a la luna mi dolor eterno.",
+      "Cada verso que sangro es amor desbordado.",
+      "Tu ausencia es un abismo sin fin.",
+      "Sufro, luego existo, porque amo.",
+      "Te soñé antes de conocerte.",
+      "Mi pecho es un volcán de pasiones.",
+      "Mi alma es un cisne herido bajo lunas de cristal.",
+      "La princesa triste soñaba con jardines de mármol y seda.",
+      "Tiemblan los astros en el lago del cielo estético.",
+      "Versos perfumados con lirios y perlas.",
+      "La estética es la nueva religión del poeta.",
+      "Reino en una torre de marfil, lejos del barro.",
+      "El arte por el arte, sin cadenas terrenales.",
+      "El perfume de los sueños baña mi alma.",
+      "Mi pluma dibuja mundos imposibles.",
+      "Damas de nácar y caballeros de ónix bailan en mi mente.",
+      "El jornal no alcanza y la guerra sigue, pero hay que sembrar.",
+      "Las torres de marfil no protegen del hambre en la calle.",
+      "El cura vendía milagros a cambio de maíz.",
+      "Cada día es igual, pero al menos no llueve.",
+      "Mi padre murió trabajando la tierra ajena.",
+      "El juez dictó sentencia antes de escuchar.",
+      "La niña dejó la escuela para cuidar a sus hermanos.",
+      "El café se cultiva con manos que nunca lo beben.",
+      "Prometieron cambio y subieron el pan.",
+      "El gallo canta entre ruinas y esperanza."
+    ];
+
+    let movimientos = [
+      ...Array(10).fill("Romanticismo"),
+      ...Array(10).fill("Modernismo"),
+      ...Array(10).fill("Realismo")
+    ];
+
+    const pares = frases.map((frase, i) => ({ frase, movimiento: movimientos[i] }));
+    for (let i = pares.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pares[i], pares[j]] = [pares[j], pares[i]];
+    }
+    frases = pares.map(p => p.frase);
+    movimientos = pares.map(p => p.movimiento);
+
+    let respuestasCorrectas = 0;
+    let tiempo = 0;
+    let cronometro;
+
+    function iniciarJuego() {
+      const nombre = document.getElementById("nombreJugador").value.trim();
+      if (nombre === "") {
+        alert("Por favor ingresa tu nombre.");
+        return;
+      }
+      localStorage.setItem("nombreJugador", nombre);
+      document.getElementById("portada").classList.remove("activa");
+      document.getElementById("juegoPantalla").classList.add("activa");
+      document.getElementById("jugador").innerText = `Jugador: ${nombre}`;
+      mostrarFrases();
+      iniciarCronometro();
+    }
+
+    function iniciarCronometro() {
+      cronometro = setInterval(() => {
+        tiempo++;
+        document.getElementById("cronometro").innerText = `Tiempo: ${tiempo} segundos`;
+      }, 1000);
+    }
+
+    function mostrarFrases() {
+      const zonaFrases = document.getElementById("zona-frases");
+      frases.forEach((frase, index) => {
+        const div = document.createElement("div");
+        div.className = "frase-draggable";
+        div.textContent = frase;
+        div.draggable = true;
+        div.id = `frase-${index}`;
+        div.dataset.movimiento = movimientos[index];
+        div.ondragstart = event => event.dataTransfer.setData("text", div.id);
+        zonaFrases.appendChild(div);
+      });
+    }
+
+    function permitirDrop(event) {
+      event.preventDefault();
+    }
+
+    function soltar(event, movimientoZona) {
+      event.preventDefault();
+      const id = event.dataTransfer.getData("text");
+      const frase = document.getElementById(id);
+      if (!frase) return;
+
+      const movimientoCorrecto = frase.dataset.movimiento;
+
+      if (movimientoCorrecto === movimientoZona) {
+        respuestasCorrectas++;
+        frase.classList.add("correcto");
+      } else {
+        frase.classList.add("incorrecto");
+      }
+
+      frase.draggable = false;
+
+      const contenedor = document.getElementById(movimientoZona);
+      contenedor.appendChild(frase);
+
+      const totalRespondidas = document.querySelectorAll(".frase-draggable.correcto, .frase-draggable.incorrecto").length;
+      if (totalRespondidas === frases.length) {
+        clearInterval(cronometro);
+        document.getElementById("finBtn").style.display = "inline-block";
+      }
+    }
+
+    function finalizarJuego() {
+      document.getElementById("juegoPantalla").classList.remove("activa");
+      document.getElementById("resumenPantalla").classList.add("activa");
+      const nombre = localStorage.getItem("nombreJugador");
+      document.getElementById("resumenTexto").innerText = `${nombre}, obtuviste ${respuestasCorrectas} puntos en ${tiempo} segundos.`;
+
+      const medallaImg = document.getElementById("medallaImg");
+const resumenTexto = document.getElementById("resumenTexto");
+
+if (respuestasCorrectas === 30) {
+  medallaImg.src = "https://static.vecteezy.com/system/resources/previews/009/593/329/non_2x/gold-medal-rhombus-with-blue-diamond-for-the-game-illustration-of-an-award-with-a-gem-png.png"; // diamante
+  resumenTexto.innerText += " ¡Excelente! Obtuviste la medalla de diamante. ¡Eres un maestro de la literatura!";
+} else if (respuestasCorrectas >= 21) {
+  medallaImg.src = "https://png.pngtree.com/png-clipart/20230522/original/pngtree-clear-gold-medal-png-image_9167447.png"; // oro
+  resumenTexto.innerText += " ¡Muy bien! Has ganado la medalla de oro. ¡Tu conocimiento es brillante!";
+} else if (respuestasCorrectas >= 11) {
+  medallaImg.src = "https://png.pngtree.com/png-clipart/20230402/original/pngtree-silver-medal-number-two-png-image_9018891.png"; // plata
+  resumenTexto.innerText += " Has conseguido la medalla de plata. ¡Sigue practicando!";
+} else {
+  medallaImg.src = "https://cdn.pixabay.com/photo/2017/03/21/21/06/medal-2163351_1280.png"; // bronce
+  resumenTexto.innerText += " Recibiste la medalla de bronce. ¡No te desanimes, puedes mejorar!";
+}
+    }
+  </script>
+</body>
+</html>
